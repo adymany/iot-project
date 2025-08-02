@@ -1,6 +1,4 @@
 
-#    AIzaSyAYn_3YGey0ZKbLrOW8gMv-6JYy-oB06Uc ppsu acc
-#    AIzaSyC5-yJxBy0yQIAm7ZWEiPfVtx-XC3TMLJ0 main acc
 
 import os
 import pathlib
@@ -19,7 +17,7 @@ import keyboard
 # --- CONFIGURATION ---
 # 1. Set your Gemini API Key.
 #    Get your key from Google AI Studio: https://aistudio.google.com/app/apikey
-GEMINI_API_KEY = "AIzaSyAYn_3YGey0ZKbLrOW8gMv-6JYy-oB06Uc" # <--- IMPORTANT: PASTE YOUR KEY HERE
+GEMINI_API_KEY = "      " # <--- IMPORTANT: PASTE YOUR KEY HERE
 
 # 2. Configure Piper TTS Voice Model
 #    Place the .onnx file in a 'voice_model' directory next to this script.
