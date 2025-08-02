@@ -1,3 +1,7 @@
+
+#    AIzaSyAYn_3YGey0ZKbLrOW8gMv-6JYy-oB06Uc ppsu acc
+#    AIzaSyC5-yJxBy0yQIAm7ZWEiPfVtx-XC3TMLJ0 main acc
+
 import os
 import pathlib
 import whisper
@@ -10,15 +14,12 @@ import soundfile as sf
 import numpy as np
 import queue
 import json
-import keyboard # Import the new library
+import keyboard
 
 # --- CONFIGURATION ---
 # 1. Set your Gemini API Key.
 #    Get your key from Google AI Studio: https://aistudio.google.com/app/apikey
-#    AIzaSyAYn_3YGey0ZKbLrOW8gMv-6JYy-oB06Uc ppsu acc
-#    AIzaSyC5-yJxBy0yQIAm7ZWEiPfVtx-XC3TMLJ0 main acc
-
-GEMINI_API_KEY = "AIzaSyAYn_3YGey0ZKbLrOW8gMv-6JYy-oB06Uc"
+GEMINI_API_KEY = "AIzaSyAYn_3YGey0ZKbLrOW8gMv-6JYy-oB06Uc" # <--- IMPORTANT: PASTE YOUR KEY HERE
 
 # 2. Configure Piper TTS Voice Model
 #    Place the .onnx file in a 'voice_model' directory next to this script.
@@ -35,7 +36,7 @@ SILENCE_THRESHOLD = 300  # Adjust this based on your microphone's sensitivity
 SILENCE_DURATION = 30  # Number of silent chunks before stopping (30 chunks * 50ms/chunk = 1.5 seconds of silence)
 CHUNK_SIZE = int(SAMPLE_RATE * 0.05) # 50ms chunks
 
-# --- MAIN SCRIPT LOGIC ---
+# --- SCRIPT LOGIC ---
 
 def record_audio_in_memory(sample_rate: int):
     """
@@ -73,7 +74,7 @@ def record_audio_in_memory(sample_rate: int):
                 if silent_chunks > SILENCE_DURATION:
                     print("Recording stopped due to silence.")
                     break
-        
+    
     if not recorded_frames:
         print("No speech detected.")
         return None
@@ -88,26 +89,23 @@ def transcribe_audio_from_memory(model, audio_data: np.ndarray) -> str:
     """
     Transcribes audio data from a NumPy array using a pre-loaded Whisper model.
     """
-    print(f"\nTranscribing audio from memory...")
+    print(f"\nTranscribing audio...")
     result = model.transcribe(audio_data, fp16=False)
     
     transcribed_text = result["text"]
     print(f"Whisper STT successful. Text: '{transcribed_text}'")
     return transcribed_text
 
-def get_gemini_response(prompt: str) -> str:
+def get_gemini_response(prompt: str, chat_session) -> str:
     """
-    Gets a response from the Google Gemini API.
+    Sends a prompt to the ongoing chat session to get a context-aware response.
+    The chat_session object automatically manages the history.
     """
-    print("\nConnecting to Google Gemini...")
+    print("\nSending prompt to Google Gemini...")
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        
-        response = model.generate_content(prompt)
-        
+        response = chat_session.send_message(prompt)
         ai_response_text = response.text if response.text else ""
-        print(f"Raw Gemini response received: '{ai_response_text}'")
+        print(f"Gemini response received: '{ai_response_text}'")
         return ai_response_text
     except Exception as e:
         print(f"An error occurred with the Gemini API: {e}")
@@ -128,7 +126,7 @@ def synthesize_and_play_speech(text_to_speak: str, output_path: str):
         print("ERROR: No valid text to synthesize after cleaning. Skipping audio generation.")
         return
 
-    print("\nSynthesizing audio using the piper command-line tool...")
+    print("\nSynthesizing audio using Piper TTS...")
     
     command = [
         "piper",
@@ -167,7 +165,7 @@ def synthesize_and_play_speech(text_to_speak: str, output_path: str):
             print(f"Piper stderr: {process.stderr}")
 
     except FileNotFoundError:
-        print("\nERROR: The 'piper' command was not found.")
+        print("\nERROR: The 'piper' command was not found. Make sure it's installed and in your system's PATH.")
     except subprocess.CalledProcessError as e:
         print("\nERROR: The piper command failed to execute.")
         print(f"Stderr: {e.stderr}")
@@ -176,20 +174,36 @@ def main():
     """
     Main function to run the conversational assistant in a loop.
     """
-    print(f"Loading Whisper model '{WHISPER_MODEL_NAME}'... (This may take a moment)")
+    # --- Initialization ---
+    print(f"Loading Whisper model '{WHISPER_MODEL_NAME}'...")
     whisper_model = whisper.load_model(WHISPER_MODEL_NAME)
     print("Whisper model loaded.")
+
+    print("\nConfiguring Gemini API...")
+    try:
+        if not GEMINI_API_KEY or "YOUR_GEMINI_API_KEY" in GEMINI_API_KEY:
+            print("ERROR: Please set your GEMINI_API_KEY in the script.")
+            return
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # Initialize the chat session, which will hold the conversation history
+        chat_session = model.start_chat(history=[])
+        print("Gemini chat session started successfully.")
+    except Exception as e:
+        print(f"FATAL: Failed to initialize Gemini API: {e}")
+        return # Exit if Gemini fails to start
+
+    print("\n🚀 AI Assistant activated. Say 'goodbye' to exit. 🚀")
     
-    print("\nAI Assistant activated. Say 'goodbye' to exit.")
-    
+    # --- Main Conversation Loop ---
     while True:
-        # 1. Record Audio directly into memory
+        # 1. Record Audio from user
         audio_data = record_audio_in_memory(SAMPLE_RATE)
         
         if audio_data is None:
-            continue
+            continue # Listen again if no speech was detected
 
-        # 2. Speech-to-Text from memory
+        # 2. Transcribe user's speech to text
         user_prompt = transcribe_audio_from_memory(whisper_model, audio_data)
         
         if "goodbye" in user_prompt.lower():
@@ -197,16 +211,16 @@ def main():
             synthesize_and_play_speech("Goodbye!", "response.wav")
             break
 
-        # 3. Get AI Response
-        ai_response = get_gemini_response(user_prompt)
+        # 3. Get AI Response using the chat session with history
+        ai_response = get_gemini_response(user_prompt, chat_session)
         
-        # 4. Text-to-Speech and Playback
+        # 4. Synthesize AI's text response to speech and play it
         output_filename = "response.wav"
         synthesize_and_play_speech(ai_response, output_filename)
         
         print("\n----------------------------------")
 
-    # Clean up final response file before exiting
+    # --- Cleanup ---
     if os.path.exists("response.wav"):
         os.remove("response.wav")
     print("\nPipeline complete!")
