@@ -1,5 +1,4 @@
 
-
 import os
 import pathlib
 import whisper
@@ -17,7 +16,7 @@ import keyboard
 # --- CONFIGURATION ---
 # 1. Set your Gemini API Key.
 #    Get your key from Google AI Studio: https://aistudio.google.com/app/apikey
-GEMINI_API_KEY = "      " # <--- IMPORTANT: PASTE YOUR KEY HERE
+GEMINI_API_KEY = "                 " # <--- IMPORTANT: PASTE YOUR KEY HERE
 
 # 2. Configure Piper TTS Voice Model
 #    Place the .onnx file in a 'voice_model' directory next to this script.
