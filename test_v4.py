@@ -6,7 +6,8 @@ import queue
 import io
 import wave
 import time
-import speech_recognition as sr
+import pvporcupine
+from pvrecorder import PvRecorder
 
 # --- CONFIGURATION ---
 class Config:
@@ -23,7 +24,7 @@ class Config:
     SILENCE_THRESHOLD = 350
     
     # --- Keyword Detection Settings ---
-    KEYWORD = "hey nexa"
+    KEYWORD = "nexa"
     
     # --- Playback Settings for RAW PCM ---
     PLAYBACK_SAMPLE_RATE = 22050  # Piper's default output rate
@@ -120,12 +121,12 @@ def record_audio_with_silence_detection():
     return b''.join(full_recording)
 
 def listen_for_keyword():
-    """Prompt user to say the keyword and press Enter"""
+    """Listen for the keyword 'Hey Nexa' with clear instructions"""
     print("\n🎤 Say 'Hey Nexa' out loud, then press Enter to start recording...")
     print("   Or press Ctrl+C to exit the application")
     
     try:
-        input()  # Wait for user to press Enter
+        input()  # Wait for user to press Enter after saying the keyword
         return True
     except KeyboardInterrupt:
         return False
