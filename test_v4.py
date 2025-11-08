@@ -6,8 +6,6 @@ import queue
 import io
 import wave
 import time
-import pvporcupine
-from pvrecorder import PvRecorder
 
 # --- CONFIGURATION ---
 class Config:
@@ -121,12 +119,11 @@ def record_audio_with_silence_detection():
     return b''.join(full_recording)
 
 def listen_for_keyword():
-    """Listen for the keyword 'Hey Nexa' with clear instructions"""
-    print("\n🎤 Say 'Hey Nexa' out loud, then press Enter to start recording...")
-    print("   Or press Ctrl+C to exit the application")
+    """Prompt user to press Enter to start recording"""
+    print("\nPress Enter to start recording, or Ctrl+C to exit...")
     
     try:
-        input()  # Wait for user to press Enter after saying the keyword
+        input()  # Wait for user to press Enter
         return True
     except KeyboardInterrupt:
         return False
@@ -136,12 +133,11 @@ def main():
     print("--- AI Voice Assistant Client ---")
     print(f"Server: {Config.SERVER_IP}:{Config.SERVER_PORT}")
     print(f"⚠️  NOTE: This client expects RAW PCM audio streaming (no WAV header)")
-    print("🗣️  To use: Say 'Hey Nexa' to start recording (keyword detection active)")
 
     while True:
         client_socket = None
         try:
-            # Listen for keyword
+            # Wait for user to press Enter
             if not listen_for_keyword():
                 break
             
