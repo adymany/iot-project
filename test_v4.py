@@ -5,6 +5,8 @@ import threading
 import queue
 import io
 import wave
+import time
+import speech_recognition as sr
 
 # --- CONFIGURATION ---
 class Config:
@@ -19,6 +21,9 @@ class Config:
     # --- Silence Detection Settings ---
     SILENCE_DURATION = 2.5
     SILENCE_THRESHOLD = 350
+    
+    # --- Keyword Detection Settings ---
+    KEYWORD = "hey nexa"
     
     # --- Playback Settings for RAW PCM ---
     PLAYBACK_SAMPLE_RATE = 22050  # Piper's default output rate
@@ -114,16 +119,30 @@ def record_audio_with_silence_detection():
     stream.close()
     return b''.join(full_recording)
 
+def listen_for_keyword():
+    """Prompt user to say the keyword and press Enter"""
+    print("\n🎤 Say 'Hey Nexa' out loud, then press Enter to start recording...")
+    print("   Or press Ctrl+C to exit the application")
+    
+    try:
+        input()  # Wait for user to press Enter
+        return True
+    except KeyboardInterrupt:
+        return False
+
 def main():
     """Main function to run the voice client."""
     print("--- AI Voice Assistant Client ---")
     print(f"Server: {Config.SERVER_IP}:{Config.SERVER_PORT}")
     print(f"⚠️  NOTE: This client expects RAW PCM audio streaming (no WAV header)")
+    print("🗣️  To use: Say 'Hey Nexa' to start recording (keyword detection active)")
 
     while True:
         client_socket = None
         try:
-            input("\nPress Enter to start recording, or Ctrl+C to exit...")
+            # Listen for keyword
+            if not listen_for_keyword():
+                break
             
             recorded_data = record_audio_with_silence_detection()
             
